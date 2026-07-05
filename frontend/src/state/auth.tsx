@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { PropsWithChildren } from "react";
 import type { AuthUser } from "../types";
-const API_URL = import.meta.env.production.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 type AuthContextValue = {
   user: AuthUser | null;
   setSession: (token: string, user: AuthUser) => void;
