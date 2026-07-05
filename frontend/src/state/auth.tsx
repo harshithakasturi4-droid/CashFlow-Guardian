@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { PropsWithChildren } from "react";
 import type { AuthUser } from "../types";
-
+const API_URL = import.meta.env.production.VITE_API_URL;
 type AuthContextValue = {
   user: AuthUser | null;
   setSession: (token: string, user: AuthUser) => void;
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const token = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(ALT_TOKEN_KEY);
     try {
       if (token) {
-        await fetch("http://127.0.0.1:8000/api/auth/logout", {
+        await fetch(`${API_URL}/api/auth/logout`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` }
         });
