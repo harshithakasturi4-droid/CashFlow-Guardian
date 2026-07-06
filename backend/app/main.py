@@ -132,13 +132,40 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)):
         email=payload.email,
         hashed_password=hash_password(payload.password),
     )
-    profile = Profile(id=user.id, display_name=payload.name, gst_default_rate=18.0)
+
     db.add(user)
+    db.flush()   # <-- Insert the user first (without committing)
+
+    profile = Profile(
+        id=user.id,
+        display_name=payload.name,
+        gst_default_rate=18.0,
+    )
+
     db.add(profile)
-    create_audit(db, user.id, "signup", "users", user.id, "Created account", payload.name)
+
+    create_audit(
+        db,
+        user.id,
+        "signup",
+        "users",
+        user.id,
+        "Created account",
+        payload.name,
+    )
+
     db.commit()
+
     token = create_token(user.id, user.email)
-    return {"token": token, "user": {"id": user.id, "email": user.email, "name": profile.display_name}}
+
+    return {
+        "token": token,
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": profile.display_name,
+        },
+    }
 
 
 @app.post("/api/auth/login")
