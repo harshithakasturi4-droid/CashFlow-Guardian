@@ -4,6 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+if not ENV_PATH.exists():
+    ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
 
 
 class Settings(BaseSettings):

@@ -1,12 +1,15 @@
 import { createRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { appRoute } from "./app";
 import { dataApi } from "../lib/api";
 import { formatINR } from "../lib/utils";
 import { MetricCard } from "../components/metric-card";
 import { Button, Card } from "../components/ui";
 import { PageHeader } from "../components/page-header";
+import { X } from "lucide-react";
+import { VoiceLoggerModal } from "../components/voice-logger";
+import { VoiceInsightsCard } from "../components/voice-insights";
 import type { TableRow } from "../types";
 
 export const dashboardRoute = createRoute({
@@ -16,7 +19,10 @@ export const dashboardRoute = createRoute({
 });
 
 function DashboardPage() {
-  const { data } = useQuery({ queryKey: ["dashboard"], queryFn: dataApi.dashboard });
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [successVoiceLog, setSuccessVoiceLog] = useState<{ transcript: string; count: number } | null>(null);
+
+  const { data, refetch } = useQuery({ queryKey: ["dashboard"], queryFn: dataApi.dashboard });
   const { data: transactions } = useQuery({
     queryKey: ["transactions", "dashboard"],
     queryFn: () => dataApi.query("transactions", { sort: [{ field: "date", direction: "asc" }], limit: 200 })
@@ -47,7 +53,7 @@ function DashboardPage() {
 
     return (reminders?.data || []).filter((item) => {
       const dueValue = item.dueDate || item.due_at;
-      if (!dueValue || String(item.status).toLowerCase() === "completed") return false;
+      if (!dueValue || String(item.status).toLowerCase() === "completed" || String(item.status).toLowerCase() === "done") return false;
       return new Date(String(dueValue)).getTime() < tomorrow.getTime();
     });
   }, [reminders]);
@@ -57,14 +63,53 @@ function DashboardPage() {
     const paymentRisk = Math.max(0, 30 - dueReminders.length * 5 - overdueLoans.length * 8);
     return Math.min(100, Math.max(0, expenseControl + cashStability + paymentRisk));
   }, [totals, forecast.shortage, dueReminders.length, overdueLoans.length]);
+  const dueToday = data?.due_today_count || 0;
+  const overdue = data?.overdue_count || 0;
+
   const alerts = useMemo(
-    () => getAlerts({ forecast, totals, dueReminders, overdueLoans, expenseTips }),
-    [forecast, totals, dueReminders, overdueLoans, expenseTips]
+    () => getAlerts({ forecast, totals, dueReminders, overdueLoans, expenseTips, dueToday, overdue }),
+    [forecast, totals, dueReminders, overdueLoans, expenseTips, dueToday, overdue]
   );
 
   return (
-    <div className="space-y-5">
-      <PageHeader title="Dashboard" blurb="Stay ahead of cash and compliance" />
+    <div className="space-y-5 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <PageHeader title="Dashboard" blurb="Stay ahead of cash and compliance" />
+        <button
+          onClick={() => setIsVoiceOpen(true)}
+          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 hover:bg-slate-800 transition-all self-start sm:self-auto gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          <span>Speak Expense</span>
+        </button>
+      </div>
+
+      {successVoiceLog && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-slate-800 shadow-sm animate-fade-in flex items-start justify-between">
+          <div className="flex items-start space-x-3">
+            <div className="rounded-full bg-emerald-100 p-2 text-emerald-700 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-emerald-900">Voice Expense Logged!</p>
+              <p className="text-emerald-700 mt-0.5">
+                Parsed: <span className="italic font-medium">"{successVoiceLog.transcript}"</span>
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Successfully created {successVoiceLog.count} transaction(s).
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setSuccessVoiceLog(null)}
+            className="text-slate-400 hover:text-slate-600 font-bold"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total revenue" value={formatINR(totals.revenue)} />
         <MetricCard label="Total expenses" value={formatINR(totals.expenses)} tone={totals.expenses > totals.revenue ? "alert" : "default"} />
@@ -143,9 +188,15 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-3">
         <Card>
-          <p className="font-display text-xl font-bold">Warnings</p>
+          <div className="flex items-center justify-between">
+            <p className="font-display text-xl font-bold">Warnings</p>
+            <div className="flex gap-1">
+              {dueToday > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">Due: {dueToday}</span>}
+              {overdue > 0 && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-800">Overdue: {overdue}</span>}
+            </div>
+          </div>
           <div className="mt-4 grid gap-3">
             {alerts.map((alert) => (
               <div key={alert.title} className={`rounded-lg border px-4 py-3 ${alert.tone === "red" ? "border-rose-200 bg-rose-50 text-rose-900" : alert.tone === "yellow" ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
@@ -168,7 +219,18 @@ function DashboardPage() {
             ))}
           </div>
         </Card>
+
+        <VoiceInsightsCard />
       </div>
+
+      <VoiceLoggerModal 
+        isOpen={isVoiceOpen} 
+        onClose={() => setIsVoiceOpen(false)} 
+        onSuccess={(transcript, expenses) => {
+          setSuccessVoiceLog({ transcript, count: expenses.length });
+          refetch();
+        }}
+      />
 
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -278,13 +340,17 @@ function getAlerts({
   totals,
   dueReminders,
   overdueLoans,
-  expenseTips
+  expenseTips,
+  dueToday,
+  overdue
 }: {
   forecast: ReturnType<typeof getCashForecast>;
   totals: ReturnType<typeof getTotals>;
   dueReminders: TableRow[];
   overdueLoans: TableRow[];
   expenseTips: Array<{ title: string; text: string }>;
+  dueToday: number;
+  overdue: number;
 }) {
   const alerts = [];
   if (forecast.shortage) {
@@ -293,8 +359,11 @@ function getAlerts({
   if (totals.thisMonthExpense > totals.thisMonthIncome && totals.thisMonthExpense > 0) {
     alerts.push({ tone: "yellow", title: "Spending is higher than income this month", why: "More cash is going out than coming in.", next: "Next step: review expense." });
   }
-  if (dueReminders.length) {
-    alerts.push({ tone: "yellow", title: `${dueReminders.length} payments need attention`, why: "Some reminders are due now.", next: "Next step: pay or follow up today." });
+  if (dueToday > 0) {
+    alerts.push({ tone: "yellow", title: `${dueToday} reminder(s) due today`, why: "Make sure to settle today's payments.", next: "Next step: check reminders." });
+  }
+  if (overdue > 0) {
+    alerts.push({ tone: "red", title: `${overdue} reminder(s) overdue`, why: "Unresolved payments past their due date.", next: "Next step: resolve overdue payments." });
   }
   if (overdueLoans.length) {
     alerts.push({ tone: "red", title: `${overdueLoans.length} customer payments are late`, why: "Late customer money can reduce available cash.", next: "Next step: send reminder." });

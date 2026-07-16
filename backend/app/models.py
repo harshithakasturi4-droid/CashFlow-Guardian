@@ -25,6 +25,14 @@ class Profile(Base):
     display_name: Mapped[str] = mapped_column(String)
     gstin: Mapped[str | None] = mapped_column(String(15), nullable=True)
     gst_default_rate: Mapped[float] = mapped_column(Float, default=18.0)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    business_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    preferred_currency: Mapped[str] = mapped_column(String, default="INR")
+    default_financial_year_start_month: Mapped[str] = mapped_column(String, default="April")
+    email_alerts_bills: Mapped[bool] = mapped_column(Boolean, default=True)
+    email_alerts_gst: Mapped[bool] = mapped_column(Boolean, default=True)
+    email_alerts_reminders: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class Transaction(Base):
@@ -44,6 +52,7 @@ class Transaction(Base):
     taxable: Mapped[bool] = mapped_column(Boolean, default=False)
     type: Mapped[str] = mapped_column(String)
     vendor: Mapped[str | None] = mapped_column(String, nullable=True)
+    bill_id: Mapped[str | None] = mapped_column(String, ForeignKey("bills.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
@@ -56,7 +65,8 @@ class Reminder(Base):
     category: Mapped[str] = mapped_column(String)
     due_at: Mapped[datetime] = mapped_column(DateTime)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String, default="active")
+    amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String, default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 

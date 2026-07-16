@@ -9,6 +9,7 @@ import { dailyRoute } from "./routes/daily";
 import { gstRoute } from "./routes/gst";
 import { billsRoute } from "./routes/bills";
 import { activityRoute } from "./routes/activity";
+import { settingsRoute } from "./routes/settings";
 
 export const routeTree = rootRoute.addChildren([
   authRoute,
@@ -20,6 +21,7 @@ export const routeTree = rootRoute.addChildren([
     dailyRoute,
     gstRoute,
     billsRoute,
-    activityRoute
+    activityRoute,
+    settingsRoute
   ])
 ]);

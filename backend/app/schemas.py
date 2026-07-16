@@ -43,3 +43,21 @@ class ReminderToast(BaseModel):
     id: str
     title: str
     due_at: datetime
+
+
+class BillAnalyzeAndSaveRequest(BaseModel):
+    image_base_64: str
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: str | None = None
+    display_name: str | None = None
+    email: EmailStr | None = None
+    phone_number: str | None = None
+    business_name: str | None = None
+    gst_number: str | None = None
+    preferred_currency: str = "INR"
+    default_financial_year_start_month: str = "April"
+    email_alerts_bills: bool = True
+    email_alerts_gst: bool = True
+    email_alerts_reminders: bool = True

@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BellRing, BookMarked, ChartNoAxesCombined, FileScan, HandCoins, Landmark, LogOut, Menu, ReceiptText, Shield, X } from "lucide-react";
+import { BellRing, BookMarked, ChartNoAxesCombined, FileScan, HandCoins, Landmark, LogOut, Menu, ReceiptText, Settings, Shield, X } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../state/auth";
 import { cn } from "../lib/utils";
@@ -13,7 +13,8 @@ const navItems = [
   { to: "/daily", label: "Daily Log", icon: BookMarked },
   { to: "/gst", label: "GST", icon: ReceiptText },
   { to: "/bills", label: "Bills", icon: FileScan },
-  { to: "/activity", label: "Activity", icon: Shield }
+  { to: "/activity", label: "Activity", icon: Shield },
+  { to: "/settings", label: "Settings", icon: Settings }
 ];
 
 export function AppShell() {

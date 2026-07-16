@@ -1,6 +1,6 @@
 import type { DashboardData, TableRow } from "../types";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 console.log("API BASE =", API_BASE);
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -65,12 +65,32 @@ export const dataApi = {
   analyzeBill: (imageBase64: string) =>
     apiFetch<{ extracted: Record<string, unknown>; flagged: boolean; reasons: string[] }>("/api/bills/analyze", {
       method: "POST",
-      body: JSON.stringify({ image_base64: imageBase64 })
+      body: JSON.stringify({ image_base_64: imageBase64 })
+    }),
+  analyzeAndSaveBill: (imageBase64: string) =>
+    apiFetch<any>("/api/bills/analyze-and-save", {
+      method: "POST",
+      body: JSON.stringify({ image_base_64: imageBase64 })
+    }),
+  getReminders: () =>
+    apiFetch<{ data: any[] }>("/api/reminders"),
+  markReminderDone: (id: string) =>
+    apiFetch<any>(`/api/reminders/${id}/done`, {
+      method: "PATCH"
     }),
   voiceChat: (history: Array<{ role: string; content: string }>) =>
     apiFetch<{ reply: string }>("/api/voice/chat", {
       method: "POST",
       body: JSON.stringify({ history })
+    }),
+  getSpendingInsights: () =>
+    apiFetch<any>("/api/voice/spending-insights"),
+  getProfile: () =>
+    apiFetch<any>("/api/user/profile"),
+  updateProfile: (payload: any) =>
+    apiFetch<any>("/api/user/profile", {
+      method: "PUT",
+      body: JSON.stringify(payload)
     })
 };
 
@@ -85,6 +105,22 @@ export async function postAudio(file: Blob) {
   });
   if (!response.ok) throw new Error("Speech recognition failed");
   return response.json() as Promise<{ text: string }>;
+}
+
+export async function trackVoiceExpenses(file: Blob) {
+  const token = localStorage.getItem("cashflow-token") || localStorage.getItem("authToken");
+  const form = new FormData();
+  form.append("audio", file, "voice_expense.webm");
+  const response = await fetch(`${API_BASE}/api/voice/track-expenses`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || "Voice logging failed");
+  }
+  return response.json() as Promise<{ transcript: string; expenses: any[] }>;
 }
 
 export async function requestSpeech(text: string) {

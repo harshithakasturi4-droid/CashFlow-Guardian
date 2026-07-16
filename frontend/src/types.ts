@@ -11,6 +11,8 @@ export type DashboardData = {
   active_loans: number;
   expense_alert: boolean;
   due_reminders: Array<{ id: string; title: string; due_at: string }>;
+  due_today_count?: number;
+  overdue_count?: number;
 };
 
 export type TableRow = Record<string, unknown>;

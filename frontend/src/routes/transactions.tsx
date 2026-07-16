@@ -6,6 +6,8 @@ import { dataApi } from "../lib/api";
 import { formatINR, todayIso } from "../lib/utils";
 import { Button, Card, Field, Input, Textarea } from "../components/ui";
 import { PageHeader } from "../components/page-header";
+import { VoiceLoggerModal } from "../components/voice-logger";
+import { X } from "lucide-react";
 
 export const transactionsRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -15,6 +17,9 @@ export const transactionsRoute = createRoute({
 
 function TransactionsPage() {
   const queryClient = useQueryClient();
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [successVoiceLog, setSuccessVoiceLog] = useState<{ transcript: string; count: number } | null>(null);
+
   const [form, setForm] = useState({
     amount: "",
     category: "General",
@@ -70,8 +75,55 @@ function TransactionsPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <PageHeader title="Money" blurb="Capture income and expenses with GST-ready fields in a few taps." />
+    <div className="space-y-5 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <PageHeader title="Money" blurb="Capture income and expenses with GST-ready fields in a few taps." />
+        <button
+          onClick={() => setIsVoiceOpen(true)}
+          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 hover:bg-slate-800 transition-all self-start sm:self-auto gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          <span>Speak Expense</span>
+        </button>
+      </div>
+
+      {successVoiceLog && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-slate-800 shadow-sm animate-fade-in flex items-start justify-between">
+          <div className="flex items-start space-x-3">
+            <div className="rounded-full bg-emerald-100 p-2 text-emerald-700 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-emerald-900">Voice Expense Logged!</p>
+              <p className="text-emerald-700 mt-0.5">
+                Parsed: <span className="italic font-medium">"{successVoiceLog.transcript}"</span>
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Successfully created {successVoiceLog.count} transaction(s).
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setSuccessVoiceLog(null)}
+            className="text-slate-400 hover:text-slate-600 font-bold"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      <VoiceLoggerModal 
+        isOpen={isVoiceOpen} 
+        onClose={() => setIsVoiceOpen(false)} 
+        onSuccess={(transcript, expenses) => {
+          setSuccessVoiceLog({ transcript, count: expenses.length });
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        }}
+      />
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)] lg:items-start">
         <Card className="grid gap-5">
           <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
