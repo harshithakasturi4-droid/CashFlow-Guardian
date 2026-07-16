@@ -20,6 +20,7 @@ from .voice_helper import parse_intent, fetch_financial_context, handle_local_vo
 
 
 Base.metadata.create_all(bind=engine)
+print("DATABASE URL:", settings.database_url)
 
 # Auto-migration: check columns in 'profiles' and add missing ones
 from sqlalchemy import inspect, text
