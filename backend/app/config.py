@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     app_name: str = "CashFlow Guardian API"
     jwt_secret: str = "change-me"
     jwt_algorithm: str = "HS256"
-    jwt_expiry_hours: int = 72
+    jwt_expiry_hours: int = 1
     groq_api_key: str | None = None
     gemini_api_key: str | None = None
     database_url: str = "sqlite:///./cashflow.db"
