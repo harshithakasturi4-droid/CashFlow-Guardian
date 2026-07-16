@@ -2,10 +2,9 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 if not ENV_PATH.exists():
-    ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
+    ENV_PATH = Path(".env")
 
 
 class Settings(BaseSettings):
