@@ -26,7 +26,7 @@ export function AppShell() {
   const handleLogout = async () => {
     await logout();
     setMenuOpen(false);
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/auth/sign-in", replace: true });
   };
 
   const navLinkClass = (active: boolean) =>

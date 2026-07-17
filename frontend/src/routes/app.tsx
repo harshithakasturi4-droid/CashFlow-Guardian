@@ -7,7 +7,7 @@ export const appRoute = createRoute({
   id: "app",
   beforeLoad: () => {
     if (!localStorage.getItem("cashflow-token") && !localStorage.getItem("authToken")) {
-      throw redirect({ to: "/auth" });
+      throw redirect({ to: "/auth/sign-in" });
     }
   },
   component: AppShell
