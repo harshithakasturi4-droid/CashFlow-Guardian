@@ -6,6 +6,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "./styles.css";
 import { routeTree } from "./routeTree";
 import { AuthProvider } from "./state/auth";
+import { ClerkAppProvider } from "./clerk/ClerkProvider";
 
 const router = createRouter({ routeTree });
 const queryClient = new QueryClient();
@@ -19,9 +20,11 @@ declare module "@tanstack/react-router" {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
+      <ClerkAppProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </ClerkAppProvider>
     </QueryClientProvider>
   </React.StrictMode>
 );

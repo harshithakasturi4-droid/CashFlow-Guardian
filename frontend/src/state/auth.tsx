@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { PropsWithChildren } from "react";
+import { useAuth as useClerkAuth, useUser } from "@clerk/react";
+import { setClerkTokenGetter } from "../lib/api";
 import type { AuthUser } from "../types";
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 type AuthContextValue = {
@@ -15,11 +17,45 @@ const USER_KEY = "cashflow-user";
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const { getToken, isLoaded, isSignedIn, signOut } = useClerkAuth();
+  const { user: clerkUser } = useUser();
 
   useEffect(() => {
     const stored = localStorage.getItem(USER_KEY);
     if (stored) setUser(JSON.parse(stored));
   }, []);
+
+  useEffect(() => {
+    setClerkTokenGetter(getToken);
+    return () => setClerkTokenGetter(null);
+  }, [getToken]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn || !clerkUser) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(ALT_TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      setUser(null);
+      return;
+    }
+
+    const email = clerkUser.primaryEmailAddress?.emailAddress || "";
+    const nextUser = {
+      id: clerkUser.id,
+      email,
+      name: clerkUser.fullName || clerkUser.username || email || "Clerk user"
+    };
+
+    setUser(nextUser);
+    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    getToken().then((token) => {
+      if (!token) return;
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(ALT_TOKEN_KEY, token);
+    });
+  }, [clerkUser, getToken, isLoaded, isSignedIn]);
 
   const setSession = (token: string, nextUser: AuthUser) => {
     localStorage.setItem(TOKEN_KEY, token);
@@ -29,7 +65,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   };
 
   const logout = async () => {
-    const token = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(ALT_TOKEN_KEY);
+    const token = (isSignedIn ? await getToken() : null) || localStorage.getItem(TOKEN_KEY) || localStorage.getItem(ALT_TOKEN_KEY);
     try {
       if (token) {
         await fetch(`${API_URL}/api/auth/logout`, {
@@ -44,6 +80,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       localStorage.removeItem(ALT_TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       setUser(null);
+      if (isSignedIn) await signOut();
     }
   };
 

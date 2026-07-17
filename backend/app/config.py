@@ -16,6 +16,17 @@ class Settings(BaseSettings):
     jwt_expiry_hours: int = 1
     groq_api_key: str | None = None
     gemini_api_key: str | None = None
+    clerk_secret_key: str | None = None
+    clerk_jwt_key: str | None = None
+    clerk_authorized_parties: list[str] = [
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "https://cash-flow-guardian-lake.vercel.app",
+    ]
     database_url: str = "sqlite:///./cashflow.db"
     cors_origins: list[str] = [
         "http://127.0.0.1:5173",

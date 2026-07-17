@@ -3,8 +3,22 @@ import type { DashboardData, TableRow } from "../types";
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 console.log("API BASE =", API_BASE);
+
+type TokenGetter = () => Promise<string | null>;
+
+let clerkTokenGetter: TokenGetter | null = null;
+
+export function setClerkTokenGetter(getter: TokenGetter | null) {
+  clerkTokenGetter = getter;
+}
+
+async function getAuthToken() {
+  const clerkToken = await clerkTokenGetter?.();
+  return clerkToken || localStorage.getItem("cashflow-token") || localStorage.getItem("authToken");
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem("cashflow-token") || localStorage.getItem("authToken");
+  const token = await getAuthToken();
   const headers = new Headers(options.headers);
   headers.set("Content-Type", headers.get("Content-Type") || "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -95,7 +109,7 @@ export const dataApi = {
 };
 
 export async function postAudio(file: Blob) {
-  const token = localStorage.getItem("cashflow-token") || localStorage.getItem("authToken");
+  const token = await getAuthToken();
   const form = new FormData();
   form.append("audio", file, "voice.webm");
   const response = await fetch(`${API_BASE}/api/voice/stt`, {
@@ -108,7 +122,7 @@ export async function postAudio(file: Blob) {
 }
 
 export async function trackVoiceExpenses(file: Blob) {
-  const token = localStorage.getItem("cashflow-token") || localStorage.getItem("authToken");
+  const token = await getAuthToken();
   const form = new FormData();
   form.append("audio", file, "voice_expense.webm");
   const response = await fetch(`${API_BASE}/api/voice/track-expenses`, {
@@ -124,7 +138,7 @@ export async function trackVoiceExpenses(file: Blob) {
 }
 
 export async function requestSpeech(text: string) {
-  const token = localStorage.getItem("cashflow-token") || localStorage.getItem("authToken");
+  const token = await getAuthToken();
   const response = await fetch(`${API_BASE}/api/voice/tts`, {
     method: "POST",
     headers: {

@@ -11,11 +11,11 @@ from sqlalchemy import Select, and_, asc, desc, func, select
 from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.orm import Session
 
-from .auth import create_token, get_current_user, hash_password, verify_password
+from .auth import get_current_user
 from .config import settings
 from .db import Base, engine, get_db
 from .models import Alert, AuditEvent, Bill, DailyUpdate, LoanOut, Profile, Reminder, Transaction, User
-from .schemas import BillAnalyzeRequest, BillAnalyzeAndSaveRequest, DataWriteRequest, LoginRequest, QueryRequest, SignupRequest, VoiceChatRequest, ProfileUpdateRequest
+from .schemas import BillAnalyzeRequest, BillAnalyzeAndSaveRequest, DataWriteRequest, QueryRequest, VoiceChatRequest, ProfileUpdateRequest
 from .voice_helper import parse_intent, fetch_financial_context, handle_local_voice_response, format_inr
 
 
@@ -144,64 +144,6 @@ def normalize_row_for_model(model, row: dict) -> dict:
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
-
-
-@app.post("/api/auth/signup")
-def signup(payload: SignupRequest, db: Session = Depends(get_db)):
-    if db.scalar(select(User).where(User.email == payload.email)):
-        raise HTTPException(status_code=409, detail="Email already exists")
-
-    user = User(
-        id=str(uuid4()),
-        email=payload.email,
-        hashed_password=hash_password(payload.password),
-    )
-
-    db.add(user)
-    db.flush()   # <-- Insert the user first (without committing)
-
-    profile = Profile(
-        id=user.id,
-        display_name=payload.name,
-        gst_default_rate=18.0,
-    )
-
-    db.add(profile)
-
-    create_audit(
-        db,
-        user.id,
-        "signup",
-        "users",
-        user.id,
-        "Created account",
-        payload.name,
-    )
-
-    db.commit()
-
-    token = create_token(user.id, user.email)
-
-    return {
-        "token": token,
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "name": profile.display_name,
-        },
-    }
-
-
-@app.post("/api/auth/login")
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.email == payload.email))
-    if not user or not verify_password(payload.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    profile = db.get(Profile, user.id)
-    create_audit(db, user.id, "login", "users", user.id, "User logged in", profile.display_name if profile else user.email)
-    db.commit()
-    token = create_token(user.id, user.email)
-    return {"token": token, "user": {"id": user.id, "email": user.email, "name": profile.display_name if profile else user.email}}
 
 
 @app.post("/api/auth/logout")
