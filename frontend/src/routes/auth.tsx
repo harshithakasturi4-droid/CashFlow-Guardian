@@ -6,7 +6,7 @@ import { Card } from "../components/ui";
 
 export const authRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/auth",
+  path: "/auth/*",
   component: AuthPage,
 });
 
