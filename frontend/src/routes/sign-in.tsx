@@ -55,7 +55,7 @@ function SignInPage() {
           </div>
 
           <SignIn
-            routing="virtual"
+            routing="hash"
             signUpUrl="/auth/sign-up"
             fallbackRedirectUrl="/"
           />
