@@ -1,5 +1,6 @@
 import { rootRoute } from "./routes/root";
-import { authRoute } from "./routes/auth";
+import { signInRoute } from "./routes/sign-in";
+import { signUpRoute } from "./routes/sign-up";
 import { appRoute } from "./routes/app";
 import { dashboardRoute } from "./routes/dashboard";
 import { transactionsRoute } from "./routes/transactions";
@@ -12,7 +13,9 @@ import { activityRoute } from "./routes/activity";
 import { settingsRoute } from "./routes/settings";
 
 export const routeTree = rootRoute.addChildren([
-  authRoute,
+  signInRoute,
+  signUpRoute,
+
   appRoute.addChildren([
     dashboardRoute,
     transactionsRoute,
@@ -22,6 +25,6 @@ export const routeTree = rootRoute.addChildren([
     gstRoute,
     billsRoute,
     activityRoute,
-    settingsRoute
-  ])
+    settingsRoute,
+  ]),
 ]);
